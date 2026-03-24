@@ -90,7 +90,7 @@
     }
     .select-wrap { position: relative; }
     .select-wrap::after {
-      content: "\u25BE";
+      content: "▾";
       position: absolute;
       right: 12px;
       top: 50%;
@@ -324,10 +324,12 @@
   <header>
     <h1>Expense Tracker</h1>
   </header>
+
   <div class="container">
     <div class="card" id="formCard">
       <h2 id="formHeading">New Expense</h2>
       <div class="banner" id="editBanner">Editing expense. Tap Update or Cancel.</div>
+
       <form id="expenseForm">
         <div class="field">
           <label for="company">Company</label>
@@ -344,6 +346,7 @@
             </select>
           </div>
         </div>
+
         <div class="field">
           <label for="expenseType">Expense Type</label>
           <div class="select-wrap">
@@ -361,20 +364,25 @@
             </select>
           </div>
         </div>
+
         <div class="field">
           <label for="expenseDate">Expense Date</label>
           <input type="date" id="expenseDate" required />
         </div>
+
         <div class="field" id="supplierField">
           <label for="supplier">Supplier / Merchant</label>
           <input type="text" id="supplier" placeholder="e.g. Trainline, Pret" />
         </div>
+
         <div class="field">
           <label for="description">Description</label>
           <input type="text" id="description" placeholder="Brief description" />
         </div>
+
         <div class="mileage-box" id="mileageBox">
           <div class="mileage-title">Mileage Claim</div>
+
           <div class="field">
             <label for="mileagePreset">Destination</label>
             <div class="select-wrap">
@@ -389,10 +397,12 @@
               </select>
             </div>
           </div>
+
           <div class="field" id="customLocationField">
             <label for="mileageLocation">Custom Location</label>
             <input type="text" id="mileageLocation" placeholder="Enter destination" />
           </div>
+
           <div class="row-2">
             <div class="field">
               <label for="miles">Miles</label>
@@ -403,8 +413,10 @@
               <input type="number" id="mileageRate" inputmode="decimal" step="0.01" min="0" value="0.45" />
             </div>
           </div>
+
           <div class="mileage-total" id="mileageTotal">£0.00</div>
         </div>
+
         <div id="normalAmountFields">
           <div class="row">
             <div class="field">
@@ -421,15 +433,19 @@
             </div>
           </div>
         </div>
+
         <div class="field">
           <label for="notes">Notes</label>
           <textarea id="notes" placeholder="Optional notes..."></textarea>
         </div>
+
       </form>
     </div>
+
     <div class="card">
       <h2>Recent Expenses</h2>
       <button class="btn btn-export" id="exportBtn" type="button">Export Unexported to CSV</button>
+
       <div class="filters">
         <div class="select-wrap">
           <select id="filterCompany">
@@ -457,20 +473,25 @@
           </select>
         </div>
       </div>
+
       <div class="summary" id="summaryBar">
         <span id="summaryCount">0 expenses</span>
         <strong id="summaryTotal">£0.00</strong>
       </div>
+
       <div id="expenseList"></div>
     </div>
   </div>
+
   <div class="sticky">
     <div class="sticky-inner">
       <button class="btn btn-primary" id="saveBtn" type="submit" form="expenseForm">Save Expense</button>
       <button class="btn btn-secondary hidden" id="cancelBtn" type="button">Cancel</button>
     </div>
   </div>
+
   <div class="toast" id="toast"></div>
+
   <script>
     (function () {
       const STORAGE_KEY = 'expense_tracker_v3';
@@ -483,6 +504,7 @@
         'Southampton': 98,
         'Guildford Station': 26
       };
+
       const form = document.getElementById('expenseForm');
       const company = document.getElementById('company');
       const expenseType = document.getElementById('expenseType');
@@ -515,29 +537,36 @@
       const formHeading = document.getElementById('formHeading');
       const formCard = document.getElementById('formCard');
       const toast = document.getElementById('toast');
+
       let editingId = null;
+
       function today() {
         return new Date().toISOString().split('T')[0];
       }
+
       function showToast(message) {
         toast.textContent = message;
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 2200);
       }
+
       function formatDate(value) {
         if (!value) return '';
         const d = new Date(value + 'T00:00:00');
         return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
       }
+
       function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text == null ? '' : String(text);
         return div.innerHTML;
       }
+
       function loadPrefs() {
         try { return JSON.parse(localStorage.getItem(PREF_KEY)) || {}; }
         catch { return {}; }
       }
+
       function savePrefs() {
         localStorage.setItem(PREF_KEY, JSON.stringify({
           company: company.value,
@@ -545,12 +574,14 @@
           mileageRate: mileageRate.value || '0.45'
         }));
       }
+
       function applyPrefs() {
         const prefs = loadPrefs();
         if (prefs.company) company.value = prefs.company;
         if (prefs.expenseType) expenseType.value = prefs.expenseType;
         if (prefs.mileageRate) mileageRate.value = prefs.mileageRate;
       }
+
       function normaliseRecord(r) {
         return {
           id: r.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 7)),
@@ -574,12 +605,14 @@
           createdAt: r.createdAt || new Date().toISOString()
         };
       }
+
       function initialiseStorage() {
         let current = null;
         try { current = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch {}
         if (Array.isArray(current)) return;
         localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
       }
+
       function loadExpenses() {
         try {
           const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -588,9 +621,11 @@
           return [];
         }
       }
+
       function saveExpenses(items) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(items.map(normaliseRecord)));
       }
+
       function calcGross() {
         if (expenseType.value === 'Mileage') return;
         const net = parseFloat(netAmount.value) || 0;
@@ -599,11 +634,13 @@
           grossAmount.value = (net + vat).toFixed(2);
         }
       }
+
       function calcMileage() {
         const m = parseFloat(miles.value) || 0;
         const r = parseFloat(mileageRate.value) || 0;
-        mileageTotal.textContent = '\u00A3' + (m * r).toFixed(2);
+        mileageTotal.textContent = '£' + (m * r).toFixed(2);
       }
+
       function toggleMileageUI() {
         const isMileage = expenseType.value === 'Mileage';
         mileageBox.classList.toggle('active', isMileage);
@@ -616,6 +653,7 @@
         }
       }
       window.toggleMileageUI = toggleMileageUI;
+
       function resetEntryFieldsKeepPrefs() {
         supplier.value = '';
         description.value = '';
@@ -630,6 +668,7 @@
         expenseDate.value = today();
         calcMileage();
       }
+
       function enterNewMode() {
         editingId = null;
         formHeading.textContent = 'New Expense';
@@ -639,6 +678,7 @@
         saveBtn.classList.remove('btn-update');
         formCard.style.border = 'none';
       }
+
       function enterEditMode() {
         formHeading.textContent = 'Edit Expense';
         editBanner.classList.add('show');
@@ -647,11 +687,14 @@
         saveBtn.classList.add('btn-update');
         formCard.style.border = '2px solid #ea580c';
       }
+
       function currentFilteredExpenses(all) {
         let items = [...all];
+
         if (filterCompany.value) {
           items = items.filter(x => x.company === filterCompany.value);
         }
+
         if (filterDate.value === 'month') {
           const now = new Date();
           items = items.filter(x => {
@@ -660,60 +703,71 @@
             return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
           });
         }
+
         if (filterExport.value === 'unexported') {
           items = items.filter(x => !x.exported);
         } else if (filterExport.value === 'exported') {
           items = items.filter(x => x.exported);
         }
+
         items.sort((a, b) => new Date(b.expenseDate) - new Date(a.expenseDate));
         return items;
       }
+
       function render() {
         const all = loadExpenses();
         const items = currentFilteredExpenses(all);
         const unexportedCount = all.filter(x => !x.exported).length;
+
         exportBtn.disabled = unexportedCount === 0;
-        exportBtn.textContent = unexportedCount ? 'Export ' + unexportedCount + ' Unexported to CSV' : 'All Expenses Exported';
+        exportBtn.textContent = unexportedCount ? `Export ${unexportedCount} Unexported to CSV` : 'All Expenses Exported';
+
         if (!items.length) {
           expenseList.innerHTML = '<div class="empty">No matching expenses</div>';
           summaryCount.textContent = '0 expenses';
-          summaryTotal.textContent = '\u00A30.00';
+          summaryTotal.textContent = '£0.00';
           return;
         }
+
         const total = items.reduce((sum, x) => sum + (parseFloat(x.grossAmount) || 0), 0);
-        summaryCount.textContent = items.length + ' expense' + (items.length === 1 ? '' : 's');
-        summaryTotal.textContent = '\u00A3' + total.toFixed(2);
+        summaryCount.textContent = `${items.length} expense${items.length === 1 ? '' : 's'}`;
+        summaryTotal.textContent = '£' + total.toFixed(2);
+
         expenseList.innerHTML = items.map(x => {
           const mileageDesc = x.expenseType === 'Mileage'
-            ? escapeHtml(x.mileageLocation || 'Mileage') + ' \u00B7 ' + escapeHtml(x.miles || '') + ' mi @ \u00A3' + escapeHtml(x.mileageRate || '0.45') + '/mi'
+            ? `${escapeHtml(x.mileageLocation || 'Mileage')} · ${escapeHtml(x.miles || '')} mi @ £${escapeHtml(x.mileageRate || '0.45')}/mi`
             : escapeHtml(x.description || x.expenseType);
           const title = x.expenseType === 'Mileage' ? 'Mileage Claim' : escapeHtml(x.supplier || x.expenseType);
           const badge = x.exported ? '<span class="badge badge-exported">Exported</span>' : '';
-          const reexport = x.exported ? '<button class="btn btn-small btn-reexport" type="button" data-reexport="' + x.id + '">Re-export</button>' : '';
+          const reexport = x.exported ? `<button class="btn btn-small btn-reexport" type="button" data-reexport="${x.id}">Re-export</button>` : '';
           const editing = editingId === x.id ? 'editing' : '';
-          return '<div class="item ' + editing + '" data-edit="' + x.id + '">'
-            + '<div class="item-top">'
-            + '<div>'
-            + '<div class="company">' + escapeHtml(x.company) + ' ' + badge + '</div>'
-            + '<div class="title">' + title + '</div>'
-            + '<div class="desc">' + mileageDesc + '</div>'
-            + '<div class="meta">' + formatDate(x.expenseDate) + ' \u00B7 ' + escapeHtml(x.expenseType) + '</div>'
-            + '</div>'
-            + '<div style="text-align:right; min-width:94px;">'
-            + '<div class="amount">\u00A3' + (parseFloat(x.grossAmount) || 0).toFixed(2) + '</div>'
-            + '<div class="actions">'
-            + reexport
-            + '<button class="btn btn-small btn-delete" type="button" data-delete="' + x.id + '">Delete</button>'
-            + '</div>'
-            + '</div>'
-            + '</div>'
-            + '</div>';
+          return `
+            <div class="item ${editing}" data-edit="${x.id}">
+              <div class="item-top">
+                <div>
+                  <div class="company">${escapeHtml(x.company)} ${badge}</div>
+                  <div class="title">${title}</div>
+                  <div class="desc">${mileageDesc}</div>
+                  <div class="meta">${formatDate(x.expenseDate)} · ${escapeHtml(x.expenseType)}</div>
+                </div>
+                <div style="text-align:right; min-width:94px;">
+                  <div class="amount">£${(parseFloat(x.grossAmount) || 0).toFixed(2)}</div>
+                  <div class="actions">
+                    ${reexport}
+                    <button class="btn btn-small btn-delete" type="button" data-delete="${x.id}">Delete</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
         }).join('');
       }
+
       function startEdit(id) {
         const items = loadExpenses();
         const x = items.find(v => v.id === id);
         if (!x) return;
+
         editingId = id;
         company.value = x.company;
         expenseType.value = x.expenseType;
@@ -726,6 +780,7 @@
         grossAmount.value = x.grossAmount || '';
         mileageRate.value = x.mileageRate || '0.45';
         miles.value = x.miles || '';
+
         if (x.mileageLocation && PRESETS[x.mileageLocation] != null) {
           mileagePreset.value = x.mileageLocation;
           mileageLocation.value = '';
@@ -735,12 +790,14 @@
           mileageLocation.value = x.mileageLocation || '';
           customLocationField.classList.remove('hidden');
         }
+
         toggleMileageUI();
         calcMileage();
         enterEditMode();
         render();
         formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
+
       function cancelEdit() {
         enterNewMode();
         resetEntryFieldsKeepPrefs();
@@ -748,6 +805,7 @@
         toggleMileageUI();
         render();
       }
+
       function deleteExpense(id) {
         if (!confirm('Delete this expense?')) return;
         const items = loadExpenses().filter(x => x.id !== id);
@@ -756,6 +814,7 @@
         render();
         showToast('Expense deleted');
       }
+
       function markUnexported(id) {
         const items = loadExpenses();
         const x = items.find(v => v.id === id);
@@ -766,6 +825,7 @@
         render();
         showToast('Marked as unexported');
       }
+
       function buildRecord() {
         const isMileage = expenseType.value === 'Mileage';
         let mileageLocationValue = '';
@@ -774,6 +834,7 @@
         let net = netAmount.value;
         let vat = vatAmount.value;
         let gross = grossAmount.value;
+
         if (isMileage) {
           mileageLocationValue = mileagePreset.value || mileageLocation.value.trim();
           milesValue = miles.value;
@@ -783,7 +844,9 @@
           vat = '0.00';
           gross = total;
         }
+
         const existing = editingId ? loadExpenses().find(x => x.id === editingId) : null;
+
         return normaliseRecord({
           id: editingId || undefined,
           company: company.value,
@@ -806,6 +869,7 @@
           createdAt: existing ? existing.createdAt : undefined
         });
       }
+
       function exportCsv() {
         const items = loadExpenses();
         const pending = items.filter(x => !x.exported);
@@ -813,28 +877,32 @@
           showToast('No unexported expenses');
           return;
         }
-        if (!confirm('Export ' + pending.length + ' unexported expense' + (pending.length === 1 ? '' : 's') + '?')) return;
+        if (!confirm(`Export ${pending.length} unexported expense${pending.length === 1 ? '' : 's'}?`)) return;
+
         const timestamp = new Date().toISOString();
         const headers = [
           'Date','Company','Expense Type','Supplier','Description',
-          'Net (\u00A3)','VAT (\u00A3)','Gross (\u00A3)','Mileage Location','Miles','Mileage Rate (\u00A3)',
+          'Net (£)','VAT (£)','Gross (£)','Mileage Location','Miles','Mileage Rate (£)',
           'Notes','Receipt Filename','Exported','Exported At'
         ];
+
         const rows = pending
           .sort((a, b) => new Date(a.expenseDate) - new Date(b.expenseDate))
           .map(x => [
             x.expenseDate, x.company, x.expenseType, x.supplier, x.description,
             x.netAmount, x.vatAmount, x.grossAmount, x.mileageLocation, x.miles, x.mileageRate,
             x.notes, x.receiptName, 'true', timestamp
-          ].map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(','));
-        const csv = '\uFEFF' + [headers.join(',')].concat(rows).join('\n');
+          ].map(v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`).join(','));
+
+        const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'expenses_' + today() + '.csv';
+        a.download = `expenses_${today()}.csv`;
         a.click();
         URL.revokeObjectURL(url);
+
         const ids = new Set(pending.map(x => x.id));
         items.forEach(x => {
           if (ids.has(x.id)) {
@@ -844,8 +912,9 @@
         });
         saveExpenses(items);
         render();
-        showToast(pending.length + ' expenses exported');
+        showToast(`${pending.length} expenses exported`);
       }
+
       mileagePreset.addEventListener('change', function () {
         const selected = mileagePreset.value;
         if (selected && PRESETS[selected] != null) {
@@ -858,6 +927,7 @@
         }
         calcMileage();
       });
+
       miles.addEventListener('input', calcMileage);
       mileageRate.addEventListener('input', calcMileage);
       netAmount.addEventListener('input', calcGross);
@@ -868,6 +938,7 @@
       filterExport.addEventListener('change', render);
       exportBtn.addEventListener('click', exportCsv);
       cancelBtn.addEventListener('click', cancelEdit);
+
       expenseList.addEventListener('click', function (e) {
         const deleteBtn = e.target.closest('[data-delete]');
         if (deleteBtn) {
@@ -886,37 +957,44 @@
           startEdit(editRow.getAttribute('data-edit'));
         }
       });
+
       form.addEventListener('submit', function (e) {
         e.preventDefault();
         const items = loadExpenses();
         const record = buildRecord();
+
         if (editingId) {
           const index = items.findIndex(x => x.id === editingId);
           if (index >= 0) items[index] = record;
         } else {
           items.push(record);
         }
+
         saveExpenses(items);
         savePrefs();
+
         const mode = editingId ? 'updated' : 'saved';
         enterNewMode();
         resetEntryFieldsKeepPrefs();
         applyPrefs();
         toggleMileageUI();
         render();
-        showToast('Expense ' + mode);
+        showToast(`Expense ${mode}`);
+
         if (expenseType.value === 'Mileage') {
           mileagePreset.focus();
         } else {
           supplier.focus();
         }
       });
+
       initialiseStorage();
       expenseDate.value = today();
       applyPrefs();
       toggleMileageUI();
       calcMileage();
       render();
+
       setTimeout(() => {
         if (expenseType.value === 'Mileage') {
           mileagePreset.focus();
