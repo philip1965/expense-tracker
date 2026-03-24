@@ -260,6 +260,12 @@
       background: #fff7ed;
       color: #9a3412;
     }
+    .btn-helper {
+      background: #eef2ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+      padding: 9px 10px;
+    }
     .sticky {
       position: fixed;
       left: 0;
@@ -314,42 +320,16 @@
       padding: 22px 10px;
       color: #6b7280;
     }
-    .toggle-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      border: 1.5px solid #d1d5db;
-      border-radius: 10px;
-      background: #fafafa;
+    .helper-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
       margin-bottom: 10px;
-    }
-    .toggle-row input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      margin: 0;
-      accent-color: #4f46e5;
-      flex: 0 0 auto;
-    }
-    .toggle-row .toggle-label {
-      font-size: 0.92rem;
-      font-weight: 600;
-      color: #111827;
-      text-transform: none;
-      letter-spacing: 0;
-      margin: 0;
-      flex: 1;
-    }
-    .toggle-row .toggle-help {
-      font-size: 0.78rem;
-      color: #6b7280;
-      margin-left: auto;
-      white-space: nowrap;
     }
     @media (max-width: 560px) {
       .row { grid-template-columns: 1fr 1fr 1fr; }
       .filters { grid-template-columns: 1fr; }
-      .toggle-row .toggle-help { white-space: normal; }
+      .helper-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -455,12 +435,10 @@
         </div>
 
         <div id="normalAmountFields">
-          <div class="field">
-            <div class="toggle-row">
-              <input type="checkbox" id="autoVat" checked />
-              <label class="toggle-label" for="autoVat">Auto VAT</label>
-              <span class="toggle-help">20%</span>
-            </div>
+          <div class="helper-grid">
+            <button class="btn btn-helper" type="button" id="addVat20Btn">+20% VAT</button>
+            <button class="btn btn-helper" type="button" id="fromGross20Btn">From Gross @20%</button>
+            <button class="btn btn-helper" type="button" id="noVatBtn">No VAT</button>
           </div>
 
           <div class="row">
@@ -539,8 +517,8 @@
 
   <script>
     (function () {
-      const STORAGE_KEY = 'expense_tracker_v4';
-      const PREF_KEY = 'expense_tracker_v4_prefs';
+      const STORAGE_KEY = 'expense_tracker_v5';
+      const PREF_KEY = 'expense_tracker_v5_prefs';
       const PRESETS = {
         'Chertsey': 55,
         'Colette': 8,
@@ -560,7 +538,9 @@
       const netAmount = document.getElementById('netAmount');
       const vatAmount = document.getElementById('vatAmount');
       const grossAmount = document.getElementById('grossAmount');
-      const autoVat = document.getElementById('autoVat');
+      const addVat20Btn = document.getElementById('addVat20Btn');
+      const fromGross20Btn = document.getElementById('fromGross20Btn');
+      const noVatBtn = document.getElementById('noVatBtn');
       const supplierField = document.getElementById('supplierField');
       const normalAmountFields = document.getElementById('normalAmountFields');
       const mileageBox = document.getElementById('mileageBox');
@@ -608,6 +588,10 @@
         return div.innerHTML;
       }
 
+      function round2(value) {
+        return Math.round((value + Number.EPSILON) * 100) / 100;
+      }
+
       function loadPrefs() {
         try { return JSON.parse(localStorage.getItem(PREF_KEY)) || {}; }
         catch { return {}; }
@@ -617,8 +601,7 @@
         localStorage.setItem(PREF_KEY, JSON.stringify({
           company: company.value,
           expenseType: expenseType.value,
-          mileageRate: mileageRate.value || '0.45',
-          autoVat: autoVat.checked
+          mileageRate: mileageRate.value || '0.45'
         }));
       }
 
@@ -627,7 +610,6 @@
         if (prefs.company) company.value = prefs.company;
         if (prefs.expenseType) expenseType.value = prefs.expenseType;
         if (prefs.mileageRate) mileageRate.value = prefs.mileageRate;
-        if (typeof prefs.autoVat === 'boolean') autoVat.checked = prefs.autoVat;
       }
 
       function normaliseRecord(r) {
@@ -659,7 +641,7 @@
         try { current = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch {}
         if (Array.isArray(current)) return;
 
-        const oldKeys = ['expense_tracker_v3', 'expenses_v2', 'expenses_v1'];
+        const oldKeys = ['expense_tracker_v4', 'expense_tracker_v3', 'expenses_v2', 'expenses_v1'];
         for (const key of oldKeys) {
           let oldData = null;
           try { oldData = JSON.parse(localStorage.getItem(key)); } catch {}
@@ -685,27 +667,21 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(items.map(normaliseRecord)));
       }
 
-      function calcGross() {
+      function calcGrossManual() {
         if (expenseType.value === 'Mileage') return;
         const net = parseFloat(netAmount.value) || 0;
-        const useAutoVat = autoVat.checked;
-
-        if (useAutoVat) {
-          const vat = net * 0.20;
-          vatAmount.value = vat.toFixed(2);
-          grossAmount.value = (net + vat).toFixed(2);
-          vatAmount.readOnly = true;
-        } else {
-          vatAmount.readOnly = false;
-          const vat = parseFloat(vatAmount.value) || 0;
-          grossAmount.value = (net + vat).toFixed(2);
+        const vat = parseFloat(vatAmount.value) || 0;
+        if (netAmount.value !== '' || vatAmount.value !== '') {
+          grossAmount.value = round2(net + vat).toFixed(2);
+        } else if (grossAmount.value !== '') {
+          grossAmount.value = '';
         }
       }
 
       function calcMileage() {
         const m = parseFloat(miles.value) || 0;
         const r = parseFloat(mileageRate.value) || 0;
-        mileageTotal.textContent = '£' + (m * r).toFixed(2);
+        mileageTotal.textContent = '£' + round2(m * r).toFixed(2);
       }
 
       function toggleMileageUI() {
@@ -714,13 +690,11 @@
         normalAmountFields.classList.toggle('hidden', isMileage);
         supplierField.classList.toggle('hidden', isMileage);
         supplier.required = !isMileage;
-
         if (isMileage) {
           vatAmount.value = '0.00';
-          vatAmount.readOnly = true;
           calcMileage();
         } else {
-          calcGross();
+          calcGrossManual();
         }
       }
       window.toggleMileageUI = toggleMileageUI;
@@ -738,7 +712,7 @@
         customLocationField.classList.remove('hidden');
         expenseDate.value = today();
         calcMileage();
-        calcGross();
+        calcGrossManual();
       }
 
       function enterNewMode() {
@@ -898,6 +872,35 @@
         showToast('Marked as unexported');
       }
 
+      function apply20VatFromNet() {
+        if (expenseType.value === 'Mileage') return;
+        const net = parseFloat(netAmount.value) || 0;
+        const vat = round2(net * 0.20);
+        vatAmount.value = vat.toFixed(2);
+        grossAmount.value = round2(net + vat).toFixed(2);
+      }
+
+      function deriveFromGross20() {
+        if (expenseType.value === 'Mileage') return;
+        const gross = parseFloat(grossAmount.value) || 0;
+        if (!gross) {
+          showToast('Enter gross first');
+          return;
+        }
+        const net = round2(gross / 1.20);
+        const vat = round2(gross - net);
+        netAmount.value = net.toFixed(2);
+        vatAmount.value = vat.toFixed(2);
+        grossAmount.value = gross.toFixed(2);
+      }
+
+      function applyNoVat() {
+        if (expenseType.value === 'Mileage') return;
+        const net = parseFloat(netAmount.value) || 0;
+        vatAmount.value = '0.00';
+        grossAmount.value = round2(net).toFixed(2);
+      }
+
       function buildRecord() {
         const isMileage = expenseType.value === 'Mileage';
         let mileageLocationValue = '';
@@ -917,15 +920,10 @@
           gross = total;
         } else {
           const parsedNet = parseFloat(netAmount.value) || 0;
-          if (autoVat.checked) {
-            vat = (parsedNet * 0.20).toFixed(2);
-            gross = (parsedNet + parseFloat(vat)).toFixed(2);
-          } else {
-            const parsedVat = parseFloat(vatAmount.value) || 0;
-            vat = parsedVat.toFixed(2);
-            gross = (parsedNet + parsedVat).toFixed(2);
-          }
-          net = parsedNet ? parsedNet.toFixed(2) : '';
+          const parsedVat = parseFloat(vatAmount.value) || 0;
+          net = netAmount.value === '' ? '' : round2(parsedNet).toFixed(2);
+          vat = vatAmount.value === '' ? '' : round2(parsedVat).toFixed(2);
+          gross = (netAmount.value !== '' || vatAmount.value !== '') ? round2(parsedNet + parsedVat).toFixed(2) : grossAmount.value;
         }
 
         const existing = editingId ? loadExpenses().find(x => x.id === editingId) : null;
@@ -1013,9 +1011,11 @@
 
       miles.addEventListener('input', calcMileage);
       mileageRate.addEventListener('input', calcMileage);
-      netAmount.addEventListener('input', calcGross);
-      vatAmount.addEventListener('input', calcGross);
-      autoVat.addEventListener('change', calcGross);
+      netAmount.addEventListener('input', calcGrossManual);
+      vatAmount.addEventListener('input', calcGrossManual);
+      addVat20Btn.addEventListener('click', apply20VatFromNet);
+      fromGross20Btn.addEventListener('click', deriveFromGross20);
+      noVatBtn.addEventListener('click', applyNoVat);
       expenseType.addEventListener('change', toggleMileageUI);
       filterCompany.addEventListener('change', render);
       filterDate.addEventListener('change', render);
@@ -1077,7 +1077,7 @@
       applyPrefs();
       toggleMileageUI();
       calcMileage();
-      calcGross();
+      calcGrossManual();
       render();
 
       setTimeout(() => {
