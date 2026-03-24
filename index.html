@@ -314,9 +314,42 @@
       padding: 22px 10px;
       color: #6b7280;
     }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 10px;
+      background: #fafafa;
+      margin-bottom: 10px;
+    }
+    .toggle-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      accent-color: #4f46e5;
+      flex: 0 0 auto;
+    }
+    .toggle-row .toggle-label {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: #111827;
+      text-transform: none;
+      letter-spacing: 0;
+      margin: 0;
+      flex: 1;
+    }
+    .toggle-row .toggle-help {
+      font-size: 0.78rem;
+      color: #6b7280;
+      margin-left: auto;
+      white-space: nowrap;
+    }
     @media (max-width: 560px) {
       .row { grid-template-columns: 1fr 1fr 1fr; }
       .filters { grid-template-columns: 1fr; }
+      .toggle-row .toggle-help { white-space: normal; }
     }
   </style>
 </head>
@@ -360,6 +393,10 @@
               <option>Software</option>
               <option>Utilities</option>
               <option>Professional Fees</option>
+              <option>Repairs</option>
+              <option>Parking</option>
+              <option>Materials</option>
+              <option>Tools</option>
               <option>Other</option>
             </select>
           </div>
@@ -418,6 +455,14 @@
         </div>
 
         <div id="normalAmountFields">
+          <div class="field">
+            <div class="toggle-row">
+              <input type="checkbox" id="autoVat" checked />
+              <label class="toggle-label" for="autoVat">Auto VAT</label>
+              <span class="toggle-help">20%</span>
+            </div>
+          </div>
+
           <div class="row">
             <div class="field">
               <label for="netAmount">Net (£)</label>
@@ -494,8 +539,8 @@
 
   <script>
     (function () {
-      const STORAGE_KEY = 'expense_tracker_v3';
-      const PREF_KEY = 'expense_tracker_v3_prefs';
+      const STORAGE_KEY = 'expense_tracker_v4';
+      const PREF_KEY = 'expense_tracker_v4_prefs';
       const PRESETS = {
         'Chertsey': 55,
         'Colette': 8,
@@ -515,6 +560,7 @@
       const netAmount = document.getElementById('netAmount');
       const vatAmount = document.getElementById('vatAmount');
       const grossAmount = document.getElementById('grossAmount');
+      const autoVat = document.getElementById('autoVat');
       const supplierField = document.getElementById('supplierField');
       const normalAmountFields = document.getElementById('normalAmountFields');
       const mileageBox = document.getElementById('mileageBox');
@@ -571,7 +617,8 @@
         localStorage.setItem(PREF_KEY, JSON.stringify({
           company: company.value,
           expenseType: expenseType.value,
-          mileageRate: mileageRate.value || '0.45'
+          mileageRate: mileageRate.value || '0.45',
+          autoVat: autoVat.checked
         }));
       }
 
@@ -580,6 +627,7 @@
         if (prefs.company) company.value = prefs.company;
         if (prefs.expenseType) expenseType.value = prefs.expenseType;
         if (prefs.mileageRate) mileageRate.value = prefs.mileageRate;
+        if (typeof prefs.autoVat === 'boolean') autoVat.checked = prefs.autoVat;
       }
 
       function normaliseRecord(r) {
@@ -606,10 +654,21 @@
         };
       }
 
-      function initialiseStorage() {
+      function migrateOldData() {
         let current = null;
         try { current = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch {}
         if (Array.isArray(current)) return;
+
+        const oldKeys = ['expense_tracker_v3', 'expenses_v2', 'expenses_v1'];
+        for (const key of oldKeys) {
+          let oldData = null;
+          try { oldData = JSON.parse(localStorage.getItem(key)); } catch {}
+          if (Array.isArray(oldData)) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(oldData.map(normaliseRecord)));
+            return;
+          }
+        }
+
         localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
       }
 
@@ -629,8 +688,16 @@
       function calcGross() {
         if (expenseType.value === 'Mileage') return;
         const net = parseFloat(netAmount.value) || 0;
-        const vat = parseFloat(vatAmount.value) || 0;
-        if (netAmount.value !== '' || vatAmount.value !== '') {
+        const useAutoVat = autoVat.checked;
+
+        if (useAutoVat) {
+          const vat = net * 0.20;
+          vatAmount.value = vat.toFixed(2);
+          grossAmount.value = (net + vat).toFixed(2);
+          vatAmount.readOnly = true;
+        } else {
+          vatAmount.readOnly = false;
+          const vat = parseFloat(vatAmount.value) || 0;
           grossAmount.value = (net + vat).toFixed(2);
         }
       }
@@ -647,9 +714,13 @@
         normalAmountFields.classList.toggle('hidden', isMileage);
         supplierField.classList.toggle('hidden', isMileage);
         supplier.required = !isMileage;
+
         if (isMileage) {
           vatAmount.value = '0.00';
+          vatAmount.readOnly = true;
           calcMileage();
+        } else {
+          calcGross();
         }
       }
       window.toggleMileageUI = toggleMileageUI;
@@ -667,6 +738,7 @@
         customLocationField.classList.remove('hidden');
         expenseDate.value = today();
         calcMileage();
+        calcGross();
       }
 
       function enterNewMode() {
@@ -843,6 +915,17 @@
           net = total;
           vat = '0.00';
           gross = total;
+        } else {
+          const parsedNet = parseFloat(netAmount.value) || 0;
+          if (autoVat.checked) {
+            vat = (parsedNet * 0.20).toFixed(2);
+            gross = (parsedNet + parseFloat(vat)).toFixed(2);
+          } else {
+            const parsedVat = parseFloat(vatAmount.value) || 0;
+            vat = parsedVat.toFixed(2);
+            gross = (parsedNet + parsedVat).toFixed(2);
+          }
+          net = parsedNet ? parsedNet.toFixed(2) : '';
         }
 
         const existing = editingId ? loadExpenses().find(x => x.id === editingId) : null;
@@ -852,7 +935,7 @@
           company: company.value,
           expenseType: expenseType.value,
           expenseDate: expenseDate.value,
-          supplier: supplier.value.trim(),
+          supplier: isMileage ? '' : supplier.value.trim(),
           description: description.value.trim(),
           netAmount: net,
           vatAmount: vat,
@@ -932,6 +1015,7 @@
       mileageRate.addEventListener('input', calcMileage);
       netAmount.addEventListener('input', calcGross);
       vatAmount.addEventListener('input', calcGross);
+      autoVat.addEventListener('change', calcGross);
       expenseType.addEventListener('change', toggleMileageUI);
       filterCompany.addEventListener('change', render);
       filterDate.addEventListener('change', render);
@@ -988,11 +1072,12 @@
         }
       });
 
-      initialiseStorage();
+      migrateOldData();
       expenseDate.value = today();
       applyPrefs();
       toggleMileageUI();
       calcMileage();
+      calcGross();
       render();
 
       setTimeout(() => {
