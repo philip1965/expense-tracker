@@ -452,11 +452,6 @@
           <textarea id="notes" placeholder="Optional notes..."></textarea>
         </div>
 
-        <div class="field">
-          <label for="receipt">Receipt</label>
-          <input type="file" id="receipt" accept="image/*,application/pdf"  />
-          <div class="muted">Only the file name is stored, not the file itself.</div>
-        </div>
       </form>
     </div>
 
@@ -532,7 +527,6 @@
       const supplier = document.getElementById('supplier');
       const description = document.getElementById('description');
       const notes = document.getElementById('notes');
-      const receipt = document.getElementById('receipt');
       const netAmount = document.getElementById('netAmount');
       const vatAmount = document.getElementById('vatAmount');
       const grossAmount = document.getElementById('grossAmount');
@@ -883,7 +877,7 @@
         }
 
         const existing = editingId ? loadExpenses().find(x => x.id === editingId) : null;
-        const file = receipt.files && receipt.files[0] ? receipt.files[0] : null;
+        const file = null;
 
         return normaliseRecord({
           id: editingId || undefined,
