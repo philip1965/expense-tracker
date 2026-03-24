@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>Expense Tracker</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+      line-height: 1.4;
+      -webkit-text-size-adjust: 100%;
+      padding-bottom: 96px;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: #0f172a;
+      color: white;
+      padding: 14px 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    header h1 {
+      margin: 0;
+      text-align: center;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 12px;
+    }
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 1.05rem;
+      border-bottom: 2px solid #eef2f7;
+      padding-bottom: 8px;
+    }
+    .field { margin-bottom: 10px; }
+    .field label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .field input,
+    .field select,
+    .field textarea,
+    .filters select {
+      width: 100%;
+      border: 1.5px solid #d1d5db;
+      border-radius: 10px;
+      background: #fafafa;
+      color: #111827;
+      padding: 11px 12px;
+      font-size: 1rem;
+      font-family: inherit;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .field textarea {
+      resize: vertical;
+      min-height: 68px;
+    }
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus,
+    .filters select:focus {
+      outline: none;
+      border-color: #4f46e5;
+      background: white;
+    }
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: "▾";
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: #6b7280;
+      font-size: 0.95rem;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .muted {
+      color: #6b7280;
+      font-size: 0.85rem;
+    }
+    .mileage-box {
+      display: none;
+      background: #eff6ff;
+      border: 1.5px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .mileage-box.active { display: block; }
+    .mileage-title {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #1d4ed8;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+    .mileage-total {
+      text-align: center;
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #1d4ed8;
+      margin-top: 4px;
+    }
+    .hidden { display: none !important; }
+    .filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .summary {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #eef2f7;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+    }
+    .summary strong { font-size: 1rem; }
+    .item {
+      padding: 10px 2px;
+      border-bottom: 1px solid #eef2f7;
+      cursor: pointer;
+    }
+    .item:last-child { border-bottom: none; }
+    .item.editing {
+      background: #fff7ed;
+      border-left: 3px solid #ea580c;
+      padding-left: 8px;
+      margin-left: -8px;
+      border-radius: 6px;
+    }
+    .item-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .company {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #4f46e5;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 2px;
+    }
+    .title {
+      font-size: 0.96rem;
+      font-weight: 700;
+    }
+    .desc {
+      font-size: 0.82rem;
+      color: #4b5563;
+    }
+    .meta {
+      font-size: 0.74rem;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+    .amount {
+      font-size: 1.08rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.62rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 999px;
+      margin-left: 6px;
+      vertical-align: middle;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .badge-exported {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: #4f46e5;
+      color: white;
+      flex: 1;
+    }
+    .btn-update { background: #ea580c; }
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+    .btn-export {
+      width: 100%;
+      margin-bottom: 10px;
+      background: #166534;
+      color: white;
+    }
+    .btn-export:disabled { background: #9ca3af; cursor: not-allowed; }
+    .btn-small {
+      padding: 5px 8px;
+      font-size: 0.72rem;
+      border-radius: 8px;
+    }
+    .btn-delete {
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+    .btn-reexport {
+      background: #fff7ed;
+      color: #9a3412;
+    }
+    .sticky {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 30;
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    }
+    .sticky-inner {
+      max-width: 640px;
+      margin: 0 auto;
+      display: flex;
+      gap: 8px;
+    }
+    .banner {
+      display: none;
+      background: #fff7ed;
+      color: #9a3412;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .banner.show { display: block; }
+    .toast {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      bottom: 86px;
+      background: #111827;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 10px;
+      opacity: 0;
+      transition: all 0.25s ease;
+      z-index: 40;
+      pointer-events: none;
+      font-size: 0.88rem;
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    .empty {
+      text-align: center;
+      padding: 22px 10px;
+      color: #6b7280;
+    }
+    @media (max-width: 560px) {
+      .row { grid-template-columns: 1fr 1fr 1fr; }
+      .filters { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Expense Tracker</h1>
+  </header>
+
+  <div class="container">
+    <div class="card" id="formCard">
+      <h2 id="formHeading">New Expense</h2>
+      <div class="banner" id="editBanner">Editing expense. Tap Update or Cancel.</div>
+
+      <form id="expenseForm">
+        <div class="field">
+          <label for="company">Company</label>
+          <div class="select-wrap">
+            <select id="company" required>
+              <option value="">Select company...</option>
+              <option>Strategic Pause Advisory Ltd</option>
+              <option>CheckMade Ltd</option>
+              <option>WEILLP</option>
+              <option>WEDEV2Ltd</option>
+              <option>WEDEVLTD</option>
+              <option>WEPLTD</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="expenseType">Expense Type</label>
+          <div class="select-wrap">
+            <select id="expenseType" required onchange="window.toggleMileageUI && window.toggleMileageUI()">
+              <option value="">Select type...</option>
+              <option>Travel</option>
+              <option>Mileage</option>
+              <option>Meals</option>
+              <option>Accommodation</option>
+              <option>Office</option>
+              <option>Software</option>
+              <option>Utilities</option>
+              <option>Professional Fees</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="source">Source</label>
+          <div class="select-wrap">
+            <select id="source" required>
+              <option value="">Select source...</option>
+              <option>Email</option>
+              <option>Photo</option>
+              <option>Upload</option>
+              <option>Manual</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="expenseDate">Expense Date</label>
+          <input type="date" id="expenseDate" required />
+        </div>
+
+        <div class="field" id="supplierField">
+          <label for="supplier">Supplier / Merchant</label>
+          <input type="text" id="supplier" placeholder="e.g. Trainline, Pret" />
+        </div>
+
+        <div class="field">
+          <label for="description">Description</label>
+          <input type="text" id="description" placeholder="Brief description" />
+        </div>
+
+        <div class="mileage-box" id="mileageBox">
+          <div class="mileage-title">Mileage Claim</div>
+
+          <div class="field">
+            <label for="mileagePreset">Destination</label>
+            <div class="select-wrap">
+              <select id="mileagePreset">
+                <option value="">Custom location...</option>
+                <option value="Chertsey" data-miles="55">Chertsey (55 mi)</option>
+                <option value="Colette" data-miles="8">Colette (8 mi)</option>
+                <option value="Dogmersfield" data-miles="18">Dogmersfield (18 mi)</option>
+                <option value="Farnham Station" data-miles="5">Farnham Station (5 mi)</option>
+                <option value="Southampton" data-miles="98">Southampton (98 mi)</option>
+                <option value="Guildford Station" data-miles="26">Guildford Station (26 mi)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field" id="customLocationField">
+            <label for="mileageLocation">Custom Location</label>
+            <input type="text" id="mileageLocation" placeholder="Enter destination" />
+          </div>
+
+          <div class="row-2">
+            <div class="field">
+              <label for="miles">Miles</label>
+              <input type="number" id="miles" inputmode="decimal" step="0.1" min="0" placeholder="0" />
+            </div>
+            <div class="field">
+              <label for="mileageRate">Rate (£/mile)</label>
+              <input type="number" id="mileageRate" inputmode="decimal" step="0.01" min="0" value="0.45" />
+            </div>
+          </div>
+
+          <div class="mileage-total" id="mileageTotal">£0.00</div>
+        </div>
+
+        <div id="normalAmountFields">
+          <div class="row">
+            <div class="field">
+              <label for="netAmount">Net (£)</label>
+              <input type="number" id="netAmount" inputmode="decimal" step="0.01" min="0" placeholder="0.00" />
+            </div>
+            <div class="field">
+              <label for="vatAmount">VAT (£)</label>
+              <input type="number" id="vatAmount" inputmode="decimal" step="0.01" min="0" placeholder="0.00" />
+            </div>
+            <div class="field">
+              <label for="grossAmount">Gross (£)</label>
+              <input type="number" id="grossAmount" inputmode="decimal" step="0.01" min="0" placeholder="Auto" />
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="notes">Notes</label>
+          <textarea id="notes" placeholder="Optional notes..."></textarea>
+        </div>
+
+        <div class="field">
+          <label for="receipt">Receipt</label>
+          <input type="file" id="receipt" accept="image/*,application/pdf" capture="environment" />
+          <div class="muted">Only the file name is stored, not the file itself.</div>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Recent Expenses</h2>
+      <button class="btn btn-export" id="exportBtn" type="button">Export Unexported to CSV</button>
+
+      <div class="filters">
+        <div class="select-wrap">
+          <select id="filterCompany">
+            <option value="">All Companies</option>
+            <option>Strategic Pause Advisory Ltd</option>
+            <option>CheckMade Ltd</option>
+            <option>WEILLP</option>
+            <option>WEDEV2Ltd</option>
+            <option>WEDEVLTD</option>
+            <option>WEPLTD</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="select-wrap">
+          <select id="filterDate">
+            <option value="month">This Month</option>
+            <option value="all">All Time</option>
+          </select>
+        </div>
+        <div class="select-wrap">
+          <select id="filterExport">
+            <option value="unexported">Unexported</option>
+            <option value="all">All</option>
+            <option value="exported">Exported</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="summary" id="summaryBar">
+        <span id="summaryCount">0 expenses</span>
+        <strong id="summaryTotal">£0.00</strong>
+      </div>
+
+      <div id="expenseList"></div>
+    </div>
+  </div>
+
+  <div class="sticky">
+    <div class="sticky-inner">
+      <button class="btn btn-primary" id="saveBtn" type="submit" form="expenseForm">Save Expense</button>
+      <button class="btn btn-secondary hidden" id="cancelBtn" type="button">Cancel</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = 'expense_tracker_v3';
+      const OLD_KEYS = ['expenses_v2', 'expenses_v1'];
+      const PREF_KEY = 'expense_tracker_v3_prefs';
+      const PRESETS = {
+        'Chertsey': 55,
+        'Colette': 8,
+        'Dogmersfield': 18,
+        'Farnham Station': 5,
+        'Southampton': 98,
+        'Guildford Station': 26
+      };
+
+      const form = document.getElementById('expenseForm');
+      const company = document.getElementById('company');
+      const expenseType = document.getElementById('expenseType');
+      const source = document.getElementById('source');
+      const expenseDate = document.getElementById('expenseDate');
+      const supplier = document.getElementById('supplier');
+      const description = document.getElementById('description');
+      const notes = document.getElementById('notes');
+      const receipt = document.getElementById('receipt');
+      const netAmount = document.getElementById('netAmount');
+      const vatAmount = document.getElementById('vatAmount');
+      const grossAmount = document.getElementById('grossAmount');
+      const supplierField = document.getElementById('supplierField');
+      const normalAmountFields = document.getElementById('normalAmountFields');
+      const mileageBox = document.getElementById('mileageBox');
+      const mileagePreset = document.getElementById('mileagePreset');
+      const customLocationField = document.getElementById('customLocationField');
+      const mileageLocation = document.getElementById('mileageLocation');
+      const miles = document.getElementById('miles');
+      const mileageRate = document.getElementById('mileageRate');
+      const mileageTotal = document.getElementById('mileageTotal');
+      const exportBtn = document.getElementById('exportBtn');
+      const expenseList = document.getElementById('expenseList');
+      const summaryCount = document.getElementById('summaryCount');
+      const summaryTotal = document.getElementById('summaryTotal');
+      const filterCompany = document.getElementById('filterCompany');
+      const filterDate = document.getElementById('filterDate');
+      const filterExport = document.getElementById('filterExport');
+      const saveBtn = document.getElementById('saveBtn');
+      const cancelBtn = document.getElementById('cancelBtn');
+      const editBanner = document.getElementById('editBanner');
+      const formHeading = document.getElementById('formHeading');
+      const formCard = document.getElementById('formCard');
+      const toast = document.getElementById('toast');
+
+      let editingId = null;
+
+      function today() {
+        return new Date().toISOString().split('T')[0];
+      }
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2200);
+      }
+
+      function formatDate(value) {
+        if (!value) return '';
+        const d = new Date(value + 'T00:00:00');
+        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text == null ? '' : String(text);
+        return div.innerHTML;
+      }
+
+      function loadPrefs() {
+        try { return JSON.parse(localStorage.getItem(PREF_KEY)) || {}; }
+        catch { return {}; }
+      }
+
+      function savePrefs() {
+        localStorage.setItem(PREF_KEY, JSON.stringify({
+          company: company.value,
+          expenseType: expenseType.value,
+          source: source.value,
+          mileageRate: mileageRate.value || '0.45'
+        }));
+      }
+
+      function applyPrefs() {
+        const prefs = loadPrefs();
+        if (prefs.company) company.value = prefs.company;
+        if (prefs.expenseType) expenseType.value = prefs.expenseType;
+        if (prefs.source) source.value = prefs.source;
+        if (prefs.mileageRate) mileageRate.value = prefs.mileageRate;
+      }
+
+      function normaliseRecord(r) {
+        return {
+          id: r.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 7)),
+          company: r.company || '',
+          expenseType: r.expenseType || '',
+          source: r.source || '',
+          expenseDate: r.expenseDate || today(),
+          supplier: r.supplier || '',
+          description: r.description || '',
+          netAmount: r.netAmount || '',
+          vatAmount: r.vatAmount || '',
+          grossAmount: r.grossAmount || '',
+          notes: r.notes || '',
+          receiptName: r.receiptName || '',
+          receiptSize: r.receiptSize || '',
+          receiptType: r.receiptType || '',
+          mileageLocation: r.mileageLocation || '',
+          miles: r.miles || '',
+          mileageRate: r.mileageRate || '',
+          exported: !!r.exported,
+          exportedAt: r.exportedAt || null,
+          createdAt: r.createdAt || new Date().toISOString()
+        };
+      }
+
+      function migrateIfNeeded() {
+        let current = null;
+        try { current = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch {}
+        if (Array.isArray(current)) return;
+
+        for (const key of OLD_KEYS) {
+          let oldData = null;
+          try { oldData = JSON.parse(localStorage.getItem(key)); } catch {}
+          if (Array.isArray(oldData) && oldData.length) {
+            const migrated = oldData.map(normaliseRecord);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+            return;
+          }
+        }
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+      }
+
+      function loadExpenses() {
+        try {
+          const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+          return data.map(normaliseRecord);
+        } catch {
+          return [];
+        }
+      }
+
+      function saveExpenses(items) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(items.map(normaliseRecord)));
+      }
+
+      function calcGross() {
+        if (expenseType.value === 'Mileage') return;
+        const net = parseFloat(netAmount.value) || 0;
+        const vat = parseFloat(vatAmount.value) || 0;
+        if (netAmount.value !== '' || vatAmount.value !== '') {
+          grossAmount.value = (net + vat).toFixed(2);
+        }
+      }
+
+      function calcMileage() {
+        const m = parseFloat(miles.value) || 0;
+        const r = parseFloat(mileageRate.value) || 0;
+        mileageTotal.textContent = '£' + (m * r).toFixed(2);
+      }
+
+      function toggleMileageUI() {
+        const isMileage = expenseType.value === 'Mileage';
+        mileageBox.classList.toggle('active', isMileage);
+        normalAmountFields.classList.toggle('hidden', isMileage);
+        supplierField.classList.toggle('hidden', isMileage);
+        supplier.required = !isMileage;
+        if (isMileage) {
+          vatAmount.value = '0.00';
+          calcMileage();
+        }
+      }
+      window.toggleMileageUI = toggleMileageUI;
+
+      function resetEntryFieldsKeepPrefs() {
+        supplier.value = '';
+        description.value = '';
+        notes.value = '';
+        receipt.value = '';
+        netAmount.value = '';
+        vatAmount.value = '';
+        grossAmount.value = '';
+        mileagePreset.value = '';
+        mileageLocation.value = '';
+        miles.value = '';
+        customLocationField.classList.remove('hidden');
+        expenseDate.value = today();
+        calcMileage();
+      }
+
+      function enterNewMode() {
+        editingId = null;
+        formHeading.textContent = 'New Expense';
+        editBanner.classList.remove('show');
+        cancelBtn.classList.add('hidden');
+        saveBtn.textContent = 'Save Expense';
+        saveBtn.classList.remove('btn-update');
+        formCard.style.border = 'none';
+      }
+
+      function enterEditMode() {
+        formHeading.textContent = 'Edit Expense';
+        editBanner.classList.add('show');
+        cancelBtn.classList.remove('hidden');
+        saveBtn.textContent = 'Update Expense';
+        saveBtn.classList.add('btn-update');
+        formCard.style.border = '2px solid #ea580c';
+      }
+
+      function currentFilteredExpenses(all) {
+        let items = [...all];
+
+        if (filterCompany.value) {
+          items = items.filter(x => x.company === filterCompany.value);
+        }
+
+        if (filterDate.value === 'month') {
+          const now = new Date();
+          items = items.filter(x => {
+            if (!x.expenseDate) return false;
+            const d = new Date(x.expenseDate + 'T00:00:00');
+            return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+          });
+        }
+
+        if (filterExport.value === 'unexported') {
+          items = items.filter(x => !x.exported);
+        } else if (filterExport.value === 'exported') {
+          items = items.filter(x => x.exported);
+        }
+
+        items.sort((a, b) => new Date(b.expenseDate) - new Date(a.expenseDate));
+        return items;
+      }
+
+      function render() {
+        const all = loadExpenses();
+        const items = currentFilteredExpenses(all);
+        const unexportedCount = all.filter(x => !x.exported).length;
+
+        exportBtn.disabled = unexportedCount === 0;
+        exportBtn.textContent = unexportedCount ? `Export ${unexportedCount} Unexported to CSV` : 'All Expenses Exported';
+
+        if (!items.length) {
+          expenseList.innerHTML = '<div class="empty">No matching expenses</div>';
+          summaryCount.textContent = '0 expenses';
+          summaryTotal.textContent = '£0.00';
+          return;
+        }
+
+        const total = items.reduce((sum, x) => sum + (parseFloat(x.grossAmount) || 0), 0);
+        summaryCount.textContent = `${items.length} expense${items.length === 1 ? '' : 's'}`;
+        summaryTotal.textContent = '£' + total.toFixed(2);
+
+        expenseList.innerHTML = items.map(x => {
+          const mileageDesc = x.expenseType === 'Mileage'
+            ? `${escapeHtml(x.mileageLocation || 'Mileage')} · ${escapeHtml(x.miles || '')} mi @ £${escapeHtml(x.mileageRate || '0.45')}/mi`
+            : escapeHtml(x.description || x.expenseType);
+          const title = x.expenseType === 'Mileage' ? 'Mileage Claim' : escapeHtml(x.supplier || x.expenseType);
+          const badge = x.exported ? '<span class="badge badge-exported">Exported</span>' : '';
+          const reexport = x.exported ? `<button class="btn btn-small btn-reexport" type="button" data-reexport="${x.id}">Re-export</button>` : '';
+          const editing = editingId === x.id ? 'editing' : '';
+          return `
+            <div class="item ${editing}" data-edit="${x.id}">
+              <div class="item-top">
+                <div>
+                  <div class="company">${escapeHtml(x.company)} ${badge}</div>
+                  <div class="title">${title}</div>
+                  <div class="desc">${mileageDesc}</div>
+                  <div class="meta">${formatDate(x.expenseDate)} · ${escapeHtml(x.expenseType)} · ${escapeHtml(x.source)}</div>
+                </div>
+                <div style="text-align:right; min-width:94px;">
+                  <div class="amount">£${(parseFloat(x.grossAmount) || 0).toFixed(2)}</div>
+                  <div class="actions">
+                    ${reexport}
+                    <button class="btn btn-small btn-delete" type="button" data-delete="${x.id}">Delete</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function startEdit(id) {
+        const items = loadExpenses();
+        const x = items.find(v => v.id === id);
+        if (!x) return;
+
+        editingId = id;
+        company.value = x.company;
+        expenseType.value = x.expenseType;
+        source.value = x.source;
+        expenseDate.value = x.expenseDate || today();
+        supplier.value = x.supplier || '';
+        description.value = x.description || '';
+        notes.value = x.notes || '';
+        netAmount.value = x.netAmount || '';
+        vatAmount.value = x.vatAmount || '';
+        grossAmount.value = x.grossAmount || '';
+        mileageRate.value = x.mileageRate || '0.45';
+        miles.value = x.miles || '';
+
+        if (x.mileageLocation && PRESETS[x.mileageLocation] != null) {
+          mileagePreset.value = x.mileageLocation;
+          mileageLocation.value = '';
+          customLocationField.classList.add('hidden');
+        } else {
+          mileagePreset.value = '';
+          mileageLocation.value = x.mileageLocation || '';
+          customLocationField.classList.remove('hidden');
+        }
+
+        toggleMileageUI();
+        calcMileage();
+        enterEditMode();
+        render();
+        formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      function cancelEdit() {
+        enterNewMode();
+        resetEntryFieldsKeepPrefs();
+        applyPrefs();
+        toggleMileageUI();
+        render();
+      }
+
+      function deleteExpense(id) {
+        if (!confirm('Delete this expense?')) return;
+        const items = loadExpenses().filter(x => x.id !== id);
+        saveExpenses(items);
+        if (editingId === id) cancelEdit();
+        render();
+        showToast('Expense deleted');
+      }
+
+      function markUnexported(id) {
+        const items = loadExpenses();
+        const x = items.find(v => v.id === id);
+        if (!x) return;
+        x.exported = false;
+        x.exportedAt = null;
+        saveExpenses(items);
+        render();
+        showToast('Marked as unexported');
+      }
+
+      function buildRecord() {
+        const isMileage = expenseType.value === 'Mileage';
+        let mileageLocationValue = '';
+        let milesValue = '';
+        let mileageRateValue = '';
+        let net = netAmount.value;
+        let vat = vatAmount.value;
+        let gross = grossAmount.value;
+
+        if (isMileage) {
+          mileageLocationValue = mileagePreset.value || mileageLocation.value.trim();
+          milesValue = miles.value;
+          mileageRateValue = mileageRate.value || '0.45';
+          const total = ((parseFloat(milesValue) || 0) * (parseFloat(mileageRateValue) || 0)).toFixed(2);
+          net = total;
+          vat = '0.00';
+          gross = total;
+        }
+
+        const existing = editingId ? loadExpenses().find(x => x.id === editingId) : null;
+        const file = receipt.files && receipt.files[0] ? receipt.files[0] : null;
+
+        return normaliseRecord({
+          id: editingId || undefined,
+          company: company.value,
+          expenseType: expenseType.value,
+          source: source.value,
+          expenseDate: expenseDate.value,
+          supplier: supplier.value.trim(),
+          description: description.value.trim(),
+          netAmount: net,
+          vatAmount: vat,
+          grossAmount: gross,
+          notes: notes.value.trim(),
+          receiptName: file ? file.name : (existing ? existing.receiptName : ''),
+          receiptSize: file ? file.size : (existing ? existing.receiptSize : ''),
+          receiptType: file ? file.type : (existing ? existing.receiptType : ''),
+          mileageLocation: mileageLocationValue,
+          miles: milesValue,
+          mileageRate: mileageRateValue,
+          exported: existing ? existing.exported : false,
+          exportedAt: existing ? existing.exportedAt : null,
+          createdAt: existing ? existing.createdAt : undefined
+        });
+      }
+
+      function exportCsv() {
+        const items = loadExpenses();
+        const pending = items.filter(x => !x.exported);
+        if (!pending.length) {
+          showToast('No unexported expenses');
+          return;
+        }
+        if (!confirm(`Export ${pending.length} unexported expense${pending.length === 1 ? '' : 's'}?`)) return;
+
+        const timestamp = new Date().toISOString();
+        const headers = [
+          'Date','Company','Expense Type','Source','Supplier','Description',
+          'Net (£)','VAT (£)','Gross (£)','Mileage Location','Miles','Mileage Rate (£)',
+          'Notes','Receipt Filename','Exported','Exported At'
+        ];
+
+        const rows = pending
+          .sort((a, b) => new Date(a.expenseDate) - new Date(b.expenseDate))
+          .map(x => [
+            x.expenseDate, x.company, x.expenseType, x.source, x.supplier, x.description,
+            x.netAmount, x.vatAmount, x.grossAmount, x.mileageLocation, x.miles, x.mileageRate,
+            x.notes, x.receiptName, 'true', timestamp
+          ].map(v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`).join(','));
+
+        const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `expenses_${today()}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        const ids = new Set(pending.map(x => x.id));
+        items.forEach(x => {
+          if (ids.has(x.id)) {
+            x.exported = true;
+            x.exportedAt = timestamp;
+          }
+        });
+        saveExpenses(items);
+        render();
+        showToast(`${pending.length} expenses exported`);
+      }
+
+      mileagePreset.addEventListener('change', function () {
+        const selected = mileagePreset.value;
+        if (selected && PRESETS[selected] != null) {
+          miles.value = PRESETS[selected];
+          customLocationField.classList.add('hidden');
+          mileageLocation.value = '';
+        } else {
+          customLocationField.classList.remove('hidden');
+          miles.value = '';
+        }
+        calcMileage();
+      });
+
+      miles.addEventListener('input', calcMileage);
+      mileageRate.addEventListener('input', calcMileage);
+      netAmount.addEventListener('input', calcGross);
+      vatAmount.addEventListener('input', calcGross);
+      expenseType.addEventListener('change', toggleMileageUI);
+      filterCompany.addEventListener('change', render);
+      filterDate.addEventListener('change', render);
+      filterExport.addEventListener('change', render);
+      exportBtn.addEventListener('click', exportCsv);
+      cancelBtn.addEventListener('click', cancelEdit);
+
+      expenseList.addEventListener('click', function (e) {
+        const deleteBtn = e.target.closest('[data-delete]');
+        if (deleteBtn) {
+          e.stopPropagation();
+          deleteExpense(deleteBtn.getAttribute('data-delete'));
+          return;
+        }
+        const reBtn = e.target.closest('[data-reexport]');
+        if (reBtn) {
+          e.stopPropagation();
+          markUnexported(reBtn.getAttribute('data-reexport'));
+          return;
+        }
+        const editRow = e.target.closest('[data-edit]');
+        if (editRow) {
+          startEdit(editRow.getAttribute('data-edit'));
+        }
+      });
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const items = loadExpenses();
+        const record = buildRecord();
+
+        if (editingId) {
+          const index = items.findIndex(x => x.id === editingId);
+          if (index >= 0) items[index] = record;
+        } else {
+          items.push(record);
+        }
+
+        saveExpenses(items);
+        savePrefs();
+
+        const mode = editingId ? 'updated' : 'saved';
+        enterNewMode();
+        resetEntryFieldsKeepPrefs();
+        applyPrefs();
+        toggleMileageUI();
+        render();
+        showToast(`Expense ${mode}`);
+
+        if (expenseType.value === 'Mileage') {
+          mileagePreset.focus();
+        } else {
+          supplier.focus();
+        }
+      });
+
+      migrateIfNeeded();
+      expenseDate.value = today();
+      applyPrefs();
+      toggleMileageUI();
+      calcMileage();
+      render();
+
+      setTimeout(() => {
+        if (expenseType.value === 'Mileage') {
+          mileagePreset.focus();
+        } else if (supplierField.classList.contains('hidden')) {
+          description.focus();
+        } else {
+          supplier.focus();
+        }
+      }, 100);
+    })();
+  </script>
+</body>
+</html>
